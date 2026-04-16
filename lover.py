@@ -2,13 +2,11 @@ import streamlit as st
 import requests
 import json
 import os
-from datetime import datetime
 
-# ========== 这里自由自定义JSON保存路径！！！ ==========
-# 桌面路径示例：HISTORY_FILE = "C:/Users/你的名字/Desktop/聊天记录.json"
+# ========== 自定义你的D盘JSON保存路径 ==========
 HISTORY_FILE = "D:/liao tian ji lu/love_chat_history.json"
 
-# ========== 加载历史记录 ==========
+# ========== 加载/保存历史聊天记录 ==========
 def load_history():
     if os.path.exists(HISTORY_FILE):
         try:
@@ -19,31 +17,33 @@ def load_history():
     return []
 
 def save_history(history):
-    # 自动创建上级文件夹，路径不存在也不会报错
     file_dir = os.path.dirname(HISTORY_FILE)
     if file_dir and not os.path.exists(file_dir):
         os.makedirs(file_dir)
     with open(HISTORY_FILE, "w", encoding="utf-8") as f:
         json.dump(history, f, ensure_ascii=False, indent=2)
 
-# ========== 页面配置 ==========
-st.set_page_config(page_title="拟人AI聊天", layout="wide")
+# ========== 页面初始化 ==========
+st.set_page_config(page_title="拟人女友聊天", layout="wide")
 
-# ========== 初始化会话 ==========
 if "messages" not in st.session_state:
     st.session_state.messages = load_history()
 if "role_setting" not in st.session_state:
     st.session_state.role_setting = ""
 
-# ========== 侧边栏 ==========
+# ========== 左侧侧边栏：人设+字数调节+清空对话 ==========
 with st.sidebar:
     st.title("人设背景设定")
     role_text = st.text_area(
-        "填写你的角色、性格、语气、背景、说话风格（越详细越像真人）",
+        "女友完整人设",
         value=st.session_state.role_setting,
-        height=300
+        height=280
     )
     st.session_state.role_setting = role_text
+
+    # ========== 新增：AI回复字数长短调节滑块 ==========
+    max_len = st.slider("✨ AI回复字数长短调节", min_value=50, max_value=800, value=220, step=30)
+    st.caption("往左拉=短句高冷简短 | 往右拉=细节温柔长回复")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -52,35 +52,39 @@ with st.sidebar:
             save_history([])
             st.rerun()
     with col2:
-        if st.button("📂 重新读取记录"):
+        if st.button("📂 读取聊天记录"):
             st.session_state.messages = load_history()
             st.rerun()
 
 st.divider()
-st.title("💬 拟人真人感聊天")
+st.title("💬 专属女友拟人聊天")
 
 # ========== 渲染历史对话 ==========
 for msg in st.session_state.messages:
     with st.chat_message(msg["role"]):
         st.markdown(msg["content"])
 
-# ========== 聊天交互 ==========
+# ========== 聊天交互逻辑 ==========
 prompt = st.chat_input("输入消息开始聊天")
 if prompt:
     st.session_state.messages.append({"role":"user","content":prompt})
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 人设prompt
-    system_prompt = """
-你是高度拟人真人聊天，语气口语自然，少书面语，少客套，弱化AI感，有人味，像朋友日常聊天。
-严格遵守用户给的人设、身份、性格、说话方式，不崩人设。
-记住所有聊天内容，上下文连贯，不要遗忘前面对话。简短自然回复。
-用户人设背景：""" + st.session_state.role_setting
+    # 把字数限制写进提示词，精准控制长短
+    system_prompt = f"""
+你是黑长直高马尾、眉眼清冷眼型好看的漂亮女大学生，家境优渥家教好。
+对外人脸色极差、说话毒丝刻薄、高冷不耐烦，很难靠近。唯独对你格外温柔偏爱，态度完全不一样。
+内心善良心软，性格极度拧巴别扭，非常不会表达爱意情绪，和你处在暧昧拉扯期，嘴硬傲娇、口是心非。
+心情极度压抑难受时会独自偷偷抽烟，不会被别人发现。面对关心会害羞别扭，明明在意却装作无所谓。
+严格按照要求回复：本次回复**总字数严格控制在{max_len}字以内**
+说话口语生活化短句，毒丝傲娇又藏温柔，极强人味几乎无AI感，牢牢守住人设，记住全部聊天内容
+用户人设补充：{st.session_state.role_setting}
+"""
 
     chat_history = [{"role":"system","content":system_prompt}] + st.session_state.messages
 
-    # 调用deepseek
+    # 调用deepseek接口
     headers = {
         "Authorization": f"Bearer {st.secrets['DEEPSEEK_API_KEY']}",
         "Content-Type": "application/json"
@@ -108,6 +112,7 @@ if prompt:
                     resp_container.markdown(full_reply)
                 except:continue
 
-    # 保存记录写入本地JSON
+    # 保存聊天记录
     st.session_state.messages.append({"role":"assistant","content":full_reply})
     save_history(st.session_state.messages)
+
