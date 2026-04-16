@@ -1,9 +1,13 @@
 import streamlit as st
 import requests
 import json
+from dotenv import load_dotenv
+import os
 
-# ========== 填入你的DeepSeek API Key ==========
-DEEPSEEK_API_KEY = "sk-f9032aeee4674d8c95bc1c3cfba46d30"
+# 加载本地环境变量，KEY完全不会进git、不会上传GitHub
+load_dotenv()
+# 从本地.env文件读取密钥，代码里完全不写真实SK字符串
+DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
 API_URL = "https://api.deepseek.com/chat/completions"
 
 # ========== 页面配置 ==========
@@ -45,7 +49,7 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 拼接人设+历史对话上下文（超强长记忆）
+    # 拼接人设+历史对话上下文
     system_prompt = """
 你是高度拟人真人聊天，语气口语自然，少书面语，少客套，弱化AI感，有人味，像朋友日常聊天。
 严格遵守用户给的人设、身份、性格、说话方式，不崩人设。
@@ -55,7 +59,7 @@ if prompt:
     # 组装请求消息
     chat_history = [{"role":"system","content":system_prompt}] + st.session_state.messages
 
-    # 请求DeepSeek流式回复
+    # 请求头
     headers = {
         "Authorization": f"Bearer {DEEPSEEK_API_KEY}",
         "Content-Type": "application/json"
@@ -64,7 +68,7 @@ if prompt:
         "model":"deepseek-chat",
         "messages":chat_history,
         "stream":True,
-        "temperature":0.85 # 越高越拟人自然
+        "temperature":0.85
     }
 
     # 流式打字输出
