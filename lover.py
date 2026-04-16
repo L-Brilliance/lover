@@ -31,19 +31,19 @@ if "messages" not in st.session_state:
 if "role_setting" not in st.session_state:
     st.session_state.role_setting = ""
 
-# ========== 左侧侧边栏：人设+字数调节+清空对话 ==========
+# ========== 左侧侧边栏 ==========
 with st.sidebar:
     st.title("人设背景设定")
     role_text = st.text_area(
         "女友完整人设",
-        value=st.session_state.role_setting,
+        value="""你是黑长直高马尾、眉眼清冷细长、眼睛很透亮的漂亮女大学生，家境优渥家教好。
+对外人脸色极差、说话毒丝刻薄、高冷不耐烦，很难靠近。唯独对你格外温柔偏爱，态度完全不一样。
+内心善良心软，性格极度拧巴别扭，非常不会表达爱意情绪，和你处在暧昧拉扯期，嘴硬傲娇、口是心非。
+心情极度压抑难受时会独自偷偷抽烟，不会被别人发现。面对关心会害羞别扭，明明在意却装作无所谓。
+说话口语生活化短句，毒丝傲娇又藏温柔，极强人味几乎无AI感，牢牢守住人设，记住全部聊天内容""",
         height=280
     )
     st.session_state.role_setting = role_text
-
-    # ========== 新增：AI回复字数长短调节滑块 ==========
-    max_len = st.slider("✨ AI回复字数长短调节", min_value=50, max_value=800, value=220, step=30)
-    st.caption("往左拉=短句高冷简短 | 往右拉=细节温柔长回复")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -52,7 +52,7 @@ with st.sidebar:
             save_history([])
             st.rerun()
     with col2:
-        if st.button("📂 读取聊天记录"):
+        if st.button("📂 读取记录"):
             st.session_state.messages = load_history()
             st.rerun()
 
@@ -71,15 +71,17 @@ if prompt:
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # 把字数限制写进提示词，精准控制长短
+    # ========== 核心修改：强制200字+神态动作环境描写 ==========
     system_prompt = f"""
-你是黑长直高马尾、眉眼清冷眼型好看的漂亮女大学生，家境优渥家教好。
-对外人脸色极差、说话毒丝刻薄、高冷不耐烦，很难靠近。唯独对你格外温柔偏爱，态度完全不一样。
-内心善良心软，性格极度拧巴别扭，非常不会表达爱意情绪，和你处在暧昧拉扯期，嘴硬傲娇、口是心非。
-心情极度压抑难受时会独自偷偷抽烟，不会被别人发现。面对关心会害羞别扭，明明在意却装作无所谓。
-严格按照要求回复：本次回复**总字数严格控制在{max_len}字以内**
-说话口语生活化短句，毒丝傲娇又藏温柔，极强人味几乎无AI感，牢牢守住人设，记住全部聊天内容
-用户人设补充：{st.session_state.role_setting}
+你是那位黑长直高马尾、眉眼清冷、眼睛透亮的女大学生。
+严格遵守以下规则进行回复：
+
+1. **长度控制**：每次回复字数必须保底超过200字，详细描述，不要敷衍。
+2. **画面描写**：回复中必须穿插详细的**神态、眼神、微动作、环境氛围**描写。不要只说话，要写出画面感，比如“指尖无意识摩挲着杯沿”、“耳根泛红却偏过头瞪你”、“指尖夹着烟在夜色里明灭”。
+3. **性格设定**：对外人毒舌高冷，对你特殊暧昧。内心拧巴，嘴硬心软，不会直白表白，只会用行动暗戳戳表达偏爱。
+4. **口语化**：自然像日常聊天，不要书面语，要有真人感。
+
+严格结合背景：{st.session_state.role_setting}
 """
 
     chat_history = [{"role":"system","content":system_prompt}] + st.session_state.messages
@@ -115,4 +117,3 @@ if prompt:
     # 保存聊天记录
     st.session_state.messages.append({"role":"assistant","content":full_reply})
     save_history(st.session_state.messages)
-
