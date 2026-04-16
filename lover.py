@@ -1,13 +1,9 @@
 import streamlit as st
 import requests
 import json
-from dotenv import load_dotenv
-import os
 
-# 加载本地环境变量，KEY完全不会进git、不会上传GitHub
-load_dotenv()
-# 从本地.env文件读取密钥，代码里完全不写真实SK字符串
-DEEPSEEK_API_KEY = os.getenv("DEEPSEEK_API_KEY")
+# 云端直接在Streamlit后台配置密钥，本地完全兼容，永远不上传github
+DEEPSEEK_API_KEY = st.secrets["DEEPSEEK_API_KEY"]
 API_URL = "https://api.deepseek.com/chat/completions"
 
 # ========== 页面配置 ==========
@@ -89,3 +85,4 @@ if prompt:
 
     # 保存AI回复进记忆
     st.session_state.messages.append({"role":"assistant","content":full_reply})
+
